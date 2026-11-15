@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dnd Dice Roller</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <p class="mark">Table dice</p>
+      <h1>Roll</h1>
+    </header>
+
+    <section class="stage" aria-live="polite">
+      <div class="die-viewport">
+        <div class="die-spin" id="dieSpin">
+          <div class="die-glyph" id="dieGlyph"></div>
+          <div class="die-face" id="dieFace">20</div>
+        </div>
+      </div>
+      <p class="formula" id="formula">1d20</p>
+      <p class="result" id="result">—</p>
+      <p class="callout" id="callout"></p>
+    </section>
+
+    <div class="selector" id="selector" role="radiogroup" aria-label="Choose a die"></div>
+
+    <button class="roll" id="roll" type="button">Roll</button>
+
+    <section class="history" aria-label="Recent rolls">
+      <h2>Recent</h2>
+      <ol id="history"></ol>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

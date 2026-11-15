@@ -33,8 +33,9 @@ let rolling = false;
 const history = [];
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-camera.position.set(0, 0.85, 4.4);
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
+camera.position.set(0, 0.15, 6.2);
+camera.lookAt(0, 0, 0);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 viewport.appendChild(renderer.domElement);
@@ -107,31 +108,25 @@ function clusterFaces(tris) {
 }
 
 function makeD10Geometry() {
-  const verts = [];
-  const index = [];
-  const add = (x, y, z) => {
-    verts.push(x, y, z);
-    return verts.length / 3 - 1;
-  };
-  const top = add(0, 1.15, 0);
-  const bottom = add(0, -1.15, 0);
-  const upper = [];
-  const lower = [];
-  for (let i = 0; i < 5; i += 1) {
-    const angle = (i / 5) * Math.PI * 2;
-    upper.push(add(Math.cos(angle), 0.42, Math.sin(angle)));
-    const low = angle + Math.PI / 5;
-    lower.push(add(Math.cos(low) * 0.98, -0.42, Math.sin(low) * 0.98));
+  const vertices = [];
+  for (let i = 0, angle = 0; i < 10; i += 1, angle += Math.PI * 2 / 10) {
+    vertices.push(new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0.105 * (i % 2 ? 1 : -1)));
   }
-  for (let i = 0; i < 5; i += 1) {
-    const next = (i + 1) % 5;
-    index.push(top, upper[i], lower[i], top, lower[i], upper[next]);
-    index.push(bottom, lower[i], upper[i], bottom, upper[next], lower[i]);
+  vertices.push(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, 1));
+  const faces = [
+    [5, 7, 11], [4, 2, 10], [1, 3, 11], [0, 8, 10], [7, 9, 11],
+    [8, 6, 10], [9, 1, 11], [2, 0, 10], [3, 5, 11], [6, 4, 10],
+    [1, 0, 2], [1, 2, 3], [3, 2, 4], [3, 4, 5], [5, 4, 6],
+    [5, 6, 7], [7, 6, 8], [7, 8, 9], [9, 8, 0], [9, 0, 1],
+  ];
+  const positions = [];
+  for (const face of faces) {
+    for (const index of face) positions.push(vertices[index].x, vertices[index].y, vertices[index].z);
   }
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-  geometry.setIndex(index);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geometry.computeVertexNormals();
+  geometry.userData.numberedTriangles = 10;
   return geometry;
 }
 
@@ -149,7 +144,13 @@ function makeLabel(text, size) {
   canvas.width = 256;
   canvas.height = 256;
   const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+  });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), material);
   mesh.userData.canvas = canvas;
   mesh.userData.texture = texture;
@@ -161,11 +162,21 @@ function setLabel(mesh, text) {
   const canvas = mesh.userData.canvas;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, 256, 256);
-  ctx.fillStyle = "#f6f1e4";
-  ctx.font = `700 ${String(text).length > 2 ? 88 : 124}px Segoe UI, sans-serif`;
+  ctx.fillStyle = "rgba(8, 7, 6, 0.94)";
+  ctx.beginPath();
+  ctx.arc(128, 128, 112, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "#e4c56a";
+  ctx.stroke();
+  ctx.font = `700 ${String(text).length > 2 ? 104 : 148}px Segoe UI, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(String(text), 128, 138);
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = "#1a1206";
+  ctx.strokeText(String(text), 128, 136);
+  ctx.fillStyle = "#ffe7a3";
+  ctx.fillText(String(text), 128, 136);
   mesh.userData.texture.needsUpdate = true;
 }
 
@@ -181,9 +192,11 @@ function showDie(id) {
     });
   }
   const geometry = geometryFor(id);
+  geometry.computeBoundingBox();
+  geometry.center();
   const body = new THREE.Mesh(
     geometry,
-    new THREE.MeshStandardMaterial({ color: 0x2c261c, metalness: 0.62, roughness: 0.32 })
+    new THREE.MeshStandardMaterial({ color: 0x3a3124, metalness: 0.35, roughness: 0.42, flatShading: true })
   );
   const edges = new THREE.LineSegments(
     new THREE.EdgesGeometry(geometry, 1),
@@ -193,23 +206,29 @@ function showDie(id) {
   group.add(body);
   group.add(edges);
 
-  const faces = clusterFaces(outwardTriangles(geometry));
+  const faces = geometry.userData.numberedTriangles
+    ? outwardTriangles(geometry).slice(0, geometry.userData.numberedTriangles)
+    : clusterFaces(outwardTriangles(geometry));
   const values = id === "d100"
     ? [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     : faces.map((_, index) => index + 1);
-  const labelSize = faces.length > 12 ? 0.34 : 0.5;
+  const labelSize = id === "d10" || id === "d100" ? 0.4 : faces.length > 12 ? 0.42 : 0.62;
   faceRecords = faces.slice(0, values.length).map((face, index) => {
     const label = makeLabel(values[index], labelSize);
     const zAxis = new THREE.Vector3(0, 0, 1);
-    label.position.copy(face.centroid).addScaledVector(face.normal, 0.02);
+    label.position.copy(face.centroid).addScaledVector(face.normal, 0.045);
     label.quaternion.setFromUnitVectors(zAxis, face.normal);
     group.add(label);
     return { value: values[index], normal: face.normal.clone(), label };
   });
 
   const box = new THREE.Box3().setFromObject(group);
-  const size = box.getSize(new THREE.Vector3()).length() || 1;
-  group.scale.setScalar(2.5 / size);
+  const radius = box.getBoundingSphere(new THREE.Sphere()).radius || 1;
+  const dist = camera.position.length();
+  const visibleHeight = 2 * Math.tan((camera.fov * Math.PI / 180) / 2) * dist;
+  group.scale.setScalar((visibleHeight * 0.72) / (radius * 2));
+  const fitted = new THREE.Box3().setFromObject(group);
+  group.position.sub(fitted.getCenter(new THREE.Vector3()));
   dieRoot = group;
   scene.add(group);
   mode = "idle";

@@ -26,11 +26,9 @@ const formula = document.getElementById("formula");
 const resultEl = document.getElementById("result");
 const callout = document.getElementById("callout");
 const rollBtn = document.getElementById("roll");
-const historyEl = document.getElementById("history");
 
 let selected = DICE.find((d) => d.id === "d20");
 let rolling = false;
-const history = [];
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
@@ -296,28 +294,6 @@ function setCallout(value, sides) {
   }
 }
 
-function renderHistory() {
-  historyEl.replaceChildren();
-  if (history.length === 0) {
-    const empty = document.createElement("li");
-    empty.className = "empty";
-    empty.textContent = "No rolls yet";
-    historyEl.appendChild(empty);
-    return;
-  }
-  for (const item of history) {
-    const li = document.createElement("li");
-    li.innerHTML = `${item.id}<b>${item.value}</b>`;
-    historyEl.appendChild(li);
-  }
-}
-
-function pushHistory(die, value) {
-  history.unshift({ id: die.id, value });
-  if (history.length > 8) history.pop();
-  renderHistory();
-}
-
 function landOn(value) {
   let record = faceRecords.find((face) => face.value === value) || faceRecords[0];
   if (selected.id === "d100") {
@@ -361,7 +337,6 @@ function roll() {
     resultEl.classList.remove("rolling");
     landOn(finalValue);
     setCallout(finalValue, sides);
-    pushHistory(selected, finalValue);
     rolling = false;
     rollBtn.disabled = false;
   }
@@ -383,4 +358,3 @@ document.addEventListener("keydown", (event) => {
 
 choose("d20");
 resultEl.textContent = "—";
-renderHistory();

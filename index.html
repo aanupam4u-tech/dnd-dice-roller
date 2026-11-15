@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dnd Dice Roller</title>
-  <link rel="stylesheet" href="styles.css?v=sheet3">
+  <link rel="stylesheet" href="styles.css?v=sheet4">
 </head>
 <body>
   <main class="app">
@@ -83,16 +83,14 @@
         </article>
       </div>
 
-      <section class="list-card calc">
+      <section class="list-card">
         <header>
-          <h2>Spell roll</h2>
-        </header>
-        <form id="calcForm" class="calc-form">
-          <label>Dice
-            <input id="calcCount" type="number" min="1" max="40" value="1" aria-label="Number of dice">
-          </label>
-          <label>Die
-            <select id="calcDie" aria-label="Die">
+          <h2>Spells</h2>
+          <form id="spellForm">
+            <input name="name" type="text" maxlength="48" placeholder="Spell name" required aria-label="Spell name">
+            <input name="level" type="number" min="1" max="9" value="1" aria-label="Spell level">
+            <input name="count" type="number" min="1" max="40" value="1" aria-label="Number of dice">
+            <select name="sides" aria-label="Die">
               <option value="4">d4</option>
               <option value="6">d6</option>
               <option value="8" selected>d8</option>
@@ -101,21 +99,7 @@
               <option value="20">d20</option>
               <option value="100">d100</option>
             </select>
-          </label>
-          <label>Adder
-            <input id="calcAdd" type="number" value="0" aria-label="Adder">
-          </label>
-          <button type="submit">Roll</button>
-        </form>
-        <p class="calc-out" id="calcOut">Set the dice and adder, then roll.</p>
-      </section>
-
-      <section class="list-card">
-        <header>
-          <h2>Spells</h2>
-          <form id="spellForm">
-            <input name="name" type="text" maxlength="48" placeholder="Spell name" required aria-label="Spell name">
-            <input name="level" type="number" min="1" max="9" value="1" aria-label="Spell level">
+            <input name="adder" type="number" value="0" aria-label="Adder">
             <button type="submit">Add</button>
           </form>
         </header>
@@ -147,6 +131,6 @@
     </section>
   </main>
   <script type="module" src="app.js?v=3d3"></script>
-  <script type="module" src="sheet.js?v=sheet2"></script>
+  <script type="module" src="sheet.js?v=sheet3"></script>
 </body>
 </html>

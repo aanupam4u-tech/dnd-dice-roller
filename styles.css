@@ -220,34 +220,38 @@ body {
 
 .list-card form input { margin: 0; width: auto; flex: 1; min-width: 0; }
 .list-card form input[type="number"] { width: 64px; flex: 0; }
-.calc-form {
+.spell-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+}
+
+.spell-formula {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  align-items: end;
-  margin-top: 12px;
+  gap: 8px;
+  align-items: center;
 }
 
-.calc-form label {
-  display: grid;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
+.spell-formula input, .spell-formula select { width: 84px; margin: 0; }
 
-.calc-form input, .calc-form select {
-  width: 92px;
+.spell-result {
+  grid-column: 1 / -1;
   margin: 0;
+  min-height: 1.2em;
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 
-.calc-out {
-  margin: 14px 0 0;
-  font-size: clamp(22px, 4vw, 36px);
-  font-weight: 640;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
+.spell-result.rolling { color: rgba(246, 244, 239, 0.45); }
+.spell-result.landed { animation: spell-land 0.35s ease; }
+
+@keyframes spell-land {
+  from { transform: scale(0.92); color: var(--gold-2); }
+  to { transform: scale(1); }
 }
 
 .list-card form button, .gear-add button {

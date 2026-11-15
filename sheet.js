@@ -22,9 +22,6 @@ function load() {
     race: "Elf",
     className: "Wizard",
     domain: "",
-    calcCount: 1,
-    calcSides: 8,
-    calcAdd: 0,
     hp: 12,
     hpMax: 12,
     mana: 6,
@@ -36,7 +33,14 @@ function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
     if (!saved || typeof saved !== "object") return blank;
-    return { ...blank, ...saved, accessories: saved.accessories?.length ? saved.accessories : blank.accessories };
+    const next = { ...blank, ...saved, accessories: saved.accessories?.length ? saved.accessories : blank.accessories };
+    next.spells = (next.spells || []).map((spell) => ({
+      count: 1,
+      sides: 8,
+      adder: 0,
+      ...spell,
+    }));
+    return next;
   } catch {
     return blank;
   }
@@ -173,12 +177,6 @@ function renderNamedList(listId, items, onChange) {
   }
   for (const item of items) {
     const li = document.createElement("li");
-    if ("level" in item) {
-      const level = document.createElement("span");
-      level.className = "spell-level";
-      level.textContent = `L${item.level}`;
-      li.appendChild(level);
-    }
     const input = document.createElement("input");
     input.type = "text";
     input.value = item.name;
@@ -242,57 +240,144 @@ function renderGear() {
   }
 }
 
-const calcCount = document.getElementById("calcCount");
-const calcDie = document.getElementById("calcDie");
-const calcAdd = document.getElementById("calcAdd");
-const calcOut = document.getElementById("calcOut");
+const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
 
-function renderCalc() {
-  calcCount.value = state.calcCount;
-  calcDie.value = String(state.calcSides);
-  calcAdd.value = state.calcAdd;
+function dieSelect(spell) {
+  const select = document.createElement("select");
+  select.setAttribute("aria-label", "Die");
+  for (const sides of DICE_SIDES) {
+    const option = document.createElement("option");
+    option.value = String(sides);
+    option.textContent = `d${sides}`;
+    if (sides === spell.sides) option.selected = true;
+    select.appendChild(option);
+  }
+  select.addEventListener("change", () => {
+    spell.sides = Number(select.value);
+    save();
+  });
+  return select;
 }
 
-calcCount.addEventListener("change", () => {
-  state.calcCount = Math.min(40, Math.max(1, Number(calcCount.value) || 1));
-  renderCalc();
-  save();
-});
-calcDie.addEventListener("change", () => {
-  state.calcSides = Number(calcDie.value);
-  save();
-});
-calcAdd.addEventListener("change", () => {
-  state.calcAdd = Number(calcAdd.value) || 0;
-  renderCalc();
-  save();
-});
+function numberField(spell, key, label, min, max) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.value = spell[key];
+  input.min = String(min);
+  if (max) input.max = String(max);
+  input.setAttribute("aria-label", label);
+  input.addEventListener("change", () => {
+    let value = Number(input.value);
+    if (Number.isNaN(value)) value = min;
+    value = Math.max(min, value);
+    if (max) value = Math.min(max, value);
+    spell[key] = value;
+    input.value = value;
+    save();
+  });
+  return input;
+}
 
-document.getElementById("calcForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  state.calcCount = Math.min(40, Math.max(1, Number(calcCount.value) || 1));
-  state.calcSides = Number(calcDie.value);
-  state.calcAdd = Number(calcAdd.value) || 0;
-  const rolls = Array.from({ length: state.calcCount }, () => 1 + Math.floor(Math.random() * state.calcSides));
-  const diceTotal = rolls.reduce((sum, roll) => sum + roll, 0);
-  const total = diceTotal + state.calcAdd;
-  const sign = state.calcAdd < 0 ? "−" : "+";
-  const adder = Math.abs(state.calcAdd);
-  calcOut.textContent = `${rolls.join(" + ")} ${sign} ${adder} = ${total}`;
-  save();
-});
+function renderSpells() {
+  const list = document.getElementById("spellList");
+  list.replaceChildren();
+  if (state.spells.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "None yet";
+    list.appendChild(empty);
+    return;
+  }
+  for (const spell of state.spells) {
+    const li = document.createElement("li");
+    li.className = "spell-card";
+    const level = document.createElement("span");
+    level.className = "spell-level";
+    level.textContent = `L${spell.level}`;
+    const name = document.createElement("input");
+    name.type = "text";
+    name.value = spell.name;
+    name.maxLength = 48;
+    name.setAttribute("aria-label", "Spell name");
+    name.addEventListener("change", () => {
+      spell.name = name.value;
+      save();
+    });
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () => {
+      state.spells = state.spells.filter((entry) => entry.id !== spell.id);
+      save();
+      renderSpells();
+    });
+    const formula = document.createElement("div");
+    formula.className = "spell-formula";
+    formula.append(
+      numberField(spell, "count", "Number of dice", 1, 40),
+      dieSelect(spell),
+      numberField(spell, "adder", "Adder", -99, 99),
+    );
+    const roll = document.createElement("button");
+    roll.type = "button";
+    roll.textContent = "Roll";
+    const result = document.createElement("p");
+    result.className = "spell-result";
+    result.textContent = "—";
+    roll.addEventListener("click", () => rollSpell(spell, result, roll));
+    formula.append(roll);
+    li.append(level, name, remove, formula, result);
+    list.appendChild(li);
+  }
+}
+
+function rollSpell(spell, result, button) {
+  if (button.disabled) return;
+  button.disabled = true;
+  const count = Math.min(40, Math.max(1, spell.count || 1));
+  const sides = spell.sides || 8;
+  const adder = Number(spell.adder) || 0;
+  const rolls = Array.from({ length: count }, () => 1 + Math.floor(Math.random() * sides));
+  const total = rolls.reduce((sum, value) => sum + value, 0) + adder;
+  const sign = adder < 0 ? "−" : "+";
+  const started = performance.now();
+  result.classList.remove("landed");
+  result.classList.add("rolling");
+  function frame(now) {
+    if (now - started < 850) {
+      const flicker = Array.from({ length: count }, () => 1 + Math.floor(Math.random() * sides));
+      result.textContent = `${flicker.join(" + ")} ${sign} ${Math.abs(adder)}`;
+      requestAnimationFrame(frame);
+      return;
+    }
+    result.classList.remove("rolling");
+    result.classList.add("landed");
+    result.textContent = `${rolls.join(" + ")} ${sign} ${Math.abs(adder)} = ${total}`;
+    button.disabled = false;
+  }
+  requestAnimationFrame(frame);
+}
 
 document.getElementById("spellForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const name = String(data.get("name") || "").trim();
   if (!name) return;
-  const level = Math.min(9, Math.max(1, Number(data.get("level")) || 1));
-  state.spells.push({ id: crypto.randomUUID(), name, level });
+  state.spells.push({
+    id: crypto.randomUUID(),
+    name,
+    level: Math.min(9, Math.max(1, Number(data.get("level")) || 1)),
+    count: Math.min(40, Math.max(1, Number(data.get("count")) || 1)),
+    sides: Number(data.get("sides")) || 8,
+    adder: Number(data.get("adder")) || 0,
+  });
   event.currentTarget.reset();
   event.currentTarget.elements.level.value = "1";
+  event.currentTarget.elements.count.value = "1";
+  event.currentTarget.elements.sides.value = "8";
+  event.currentTarget.elements.adder.value = "0";
   save();
-  renderNamedList("spellList", state.spells, save);
+  renderSpells();
 });
 
 document.getElementById("cantripForm").addEventListener("submit", (event) => {
@@ -319,7 +404,6 @@ document.getElementById("gearForm").addEventListener("submit", (event) => {
 
 renderIdentity();
 renderVitals();
-renderCalc();
-renderNamedList("spellList", state.spells, save);
+renderSpells();
 renderNamedList("cantripList", state.cantrips, save);
 renderGear();

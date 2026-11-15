@@ -4,10 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dnd Dice Roller</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=sheet">
 </head>
 <body>
   <main class="app">
+    <nav class="switch" role="tablist" aria-label="Sections">
+      <button type="button" id="tabDice" role="tab" aria-selected="true" aria-controls="diceView">Dice</button>
+      <button type="button" id="tabSheet" role="tab" aria-selected="false" aria-controls="sheetView">Sheet</button>
+    </nav>
+
+    <div id="diceView">
     <header class="top">
       <p class="mark">Table dice</p>
       <h1>Roll</h1>
@@ -28,7 +34,98 @@
       <h2>Recent</h2>
       <ol id="history"></ol>
     </section>
+    </div>
+
+    <section id="sheetView" class="sheet" hidden>
+      <header class="top">
+        <p class="mark">Character</p>
+        <input class="hero-name" id="charName" type="text" maxlength="40" placeholder="Character name" aria-label="Character name">
+      </header>
+
+      <div class="identity">
+        <fieldset>
+          <legend>Race</legend>
+          <div class="choices" id="raceChoices"></div>
+          <input id="raceCustom" type="text" maxlength="32" placeholder="Custom race" aria-label="Custom race">
+        </fieldset>
+        <fieldset>
+          <legend>Class</legend>
+          <div class="choices" id="classChoices"></div>
+          <input id="classCustom" type="text" maxlength="32" placeholder="Custom class" aria-label="Custom class">
+        </fieldset>
+        <fieldset>
+          <legend>Domain</legend>
+          <div class="choices" id="domainChoices"></div>
+          <input id="domainCustom" type="text" maxlength="32" placeholder="Custom domain" aria-label="Custom domain">
+        </fieldset>
+      </div>
+
+      <div class="vitals">
+        <article class="vital hp">
+          <header>
+            <h2>HP</h2>
+            <p><input id="hpNow" type="number" min="0" aria-label="Current hit points"> / <input id="hpMax" type="number" min="1" aria-label="Maximum hit points"></p>
+          </header>
+          <div class="bar" aria-hidden="true"><span id="hpBar"></span></div>
+          <div class="nudges">
+            <button type="button" data-pool="hp" data-delta="-5">−5</button>
+            <button type="button" data-pool="hp" data-delta="-1">−1</button>
+            <button type="button" data-pool="hp" data-delta="1">+1</button>
+            <button type="button" data-pool="hp" data-delta="5">+5</button>
+          </div>
+        </article>
+        <article class="vital mana">
+          <header>
+            <h2>Mana</h2>
+            <p><input id="manaNow" type="number" min="0" aria-label="Current mana"> / <input id="manaMax" type="number" min="1" aria-label="Maximum mana"></p>
+          </header>
+          <div class="bar" aria-hidden="true"><span id="manaBar"></span></div>
+          <div class="nudges">
+            <button type="button" data-pool="mana" data-delta="-5">−5</button>
+            <button type="button" data-pool="mana" data-delta="-1">−1</button>
+            <button type="button" data-pool="mana" data-delta="1">+1</button>
+            <button type="button" data-pool="mana" data-delta="5">+5</button>
+          </div>
+        </article>
+      </div>
+
+      <section class="list-card">
+        <header>
+          <h2>Spells</h2>
+          <form id="spellForm">
+            <input name="name" type="text" maxlength="48" placeholder="Spell name" required aria-label="Spell name">
+            <input name="level" type="number" min="1" max="9" value="1" aria-label="Spell level">
+            <button type="submit">Add</button>
+          </form>
+        </header>
+        <ul id="spellList"></ul>
+      </section>
+
+      <section class="list-card">
+        <header>
+          <h2>Cantrips</h2>
+          <form id="cantripForm">
+            <input name="name" type="text" maxlength="48" placeholder="Cantrip name" required aria-label="Cantrip name">
+            <button type="submit">Add</button>
+          </form>
+        </header>
+        <ul id="cantripList"></ul>
+      </section>
+
+      <section class="list-card">
+        <header>
+          <h2>Accessories</h2>
+        </header>
+        <ul class="gear" id="gearList"></ul>
+        <form id="gearForm" class="gear-add">
+          <input name="slot" type="text" maxlength="24" placeholder="Slot" required aria-label="Accessory slot">
+          <input name="name" type="text" maxlength="48" placeholder="Item" required aria-label="Accessory name">
+          <button type="submit">Add</button>
+        </form>
+      </section>
+    </section>
   </main>
   <script type="module" src="app.js?v=3d2"></script>
+  <script type="module" src="sheet.js?v=sheet"></script>
 </body>
 </html>

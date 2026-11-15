@@ -1,6 +1,5 @@
 const RACES = ["Human", "Elf", "Dwarf", "Halfling", "Dragonborn", "Tiefling", "Gnome", "Orc"];
 const CLASSES = ["Fighter", "Wizard", "Cleric", "Rogue", "Paladin", "Warlock", "Bard", "Druid", "Ranger", "Sorcerer"];
-const DOMAINS = ["Arcane", "Life", "Light", "War", "Tempest", "Nature", "Trickery", "Grave", "Forge"];
 const STARTER_GEAR = [
   ["Head", ""],
   ["Neck", ""],
@@ -22,7 +21,10 @@ function load() {
     name: "",
     race: "Elf",
     className: "Wizard",
-    domain: "Arcane",
+    domain: "",
+    calcCount: 1,
+    calcSides: 8,
+    calcAdd: 0,
     hp: 12,
     hpMax: 12,
     mana: 6,
@@ -72,7 +74,7 @@ function choiceRow(container, options, current, onPick) {
 const nameInput = document.getElementById("charName");
 const raceCustom = document.getElementById("raceCustom");
 const classCustom = document.getElementById("classCustom");
-const domainCustom = document.getElementById("domainCustom");
+const domainInput = document.getElementById("domainInput");
 
 function renderIdentity() {
   nameInput.value = state.name;
@@ -88,15 +90,9 @@ function renderIdentity() {
     save();
     renderIdentity();
   });
-  choiceRow(document.getElementById("domainChoices"), DOMAINS, state.domain, (value) => {
-    state.domain = value;
-    domainCustom.value = "";
-    save();
-    renderIdentity();
-  });
   raceCustom.value = RACES.includes(state.race) ? "" : state.race;
   classCustom.value = CLASSES.includes(state.className) ? "" : state.className;
-  domainCustom.value = DOMAINS.includes(state.domain) ? "" : state.domain;
+  domainInput.value = state.domain;
 }
 
 nameInput.addEventListener("input", () => {
@@ -117,7 +113,10 @@ function bindCustom(input, key) {
 
 bindCustom(raceCustom, "race");
 bindCustom(classCustom, "className");
-bindCustom(domainCustom, "domain");
+domainInput.addEventListener("input", () => {
+  state.domain = domainInput.value;
+  save();
+});
 
 function clampPools() {
   state.hpMax = Math.max(1, Number(state.hpMax) || 1);
@@ -243,6 +242,46 @@ function renderGear() {
   }
 }
 
+const calcCount = document.getElementById("calcCount");
+const calcDie = document.getElementById("calcDie");
+const calcAdd = document.getElementById("calcAdd");
+const calcOut = document.getElementById("calcOut");
+
+function renderCalc() {
+  calcCount.value = state.calcCount;
+  calcDie.value = String(state.calcSides);
+  calcAdd.value = state.calcAdd;
+}
+
+calcCount.addEventListener("change", () => {
+  state.calcCount = Math.min(40, Math.max(1, Number(calcCount.value) || 1));
+  renderCalc();
+  save();
+});
+calcDie.addEventListener("change", () => {
+  state.calcSides = Number(calcDie.value);
+  save();
+});
+calcAdd.addEventListener("change", () => {
+  state.calcAdd = Number(calcAdd.value) || 0;
+  renderCalc();
+  save();
+});
+
+document.getElementById("calcForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  state.calcCount = Math.min(40, Math.max(1, Number(calcCount.value) || 1));
+  state.calcSides = Number(calcDie.value);
+  state.calcAdd = Number(calcAdd.value) || 0;
+  const rolls = Array.from({ length: state.calcCount }, () => 1 + Math.floor(Math.random() * state.calcSides));
+  const diceTotal = rolls.reduce((sum, roll) => sum + roll, 0);
+  const total = diceTotal + state.calcAdd;
+  const sign = state.calcAdd < 0 ? "−" : "+";
+  const adder = Math.abs(state.calcAdd);
+  calcOut.textContent = `${rolls.join(" + ")} ${sign} ${adder} = ${total}`;
+  save();
+});
+
 document.getElementById("spellForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
@@ -280,6 +319,7 @@ document.getElementById("gearForm").addEventListener("submit", (event) => {
 
 renderIdentity();
 renderVitals();
+renderCalc();
 renderNamedList("spellList", state.spells, save);
 renderNamedList("cantripList", state.cantrips, save);
 renderGear();

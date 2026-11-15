@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dnd Dice Roller</title>
-  <link rel="stylesheet" href="styles.css?v=sheet2">
+  <link rel="stylesheet" href="styles.css?v=sheet3">
 </head>
 <body>
   <main class="app">
@@ -50,8 +50,7 @@
         </fieldset>
         <fieldset>
           <legend>Domain</legend>
-          <div class="choices" id="domainChoices"></div>
-          <input id="domainCustom" type="text" maxlength="32" placeholder="Custom domain" aria-label="Custom domain">
+          <input id="domainInput" type="text" maxlength="32" placeholder="Type a domain" aria-label="Domain">
         </fieldset>
       </div>
 
@@ -83,6 +82,33 @@
           </div>
         </article>
       </div>
+
+      <section class="list-card calc">
+        <header>
+          <h2>Spell roll</h2>
+        </header>
+        <form id="calcForm" class="calc-form">
+          <label>Dice
+            <input id="calcCount" type="number" min="1" max="40" value="1" aria-label="Number of dice">
+          </label>
+          <label>Die
+            <select id="calcDie" aria-label="Die">
+              <option value="4">d4</option>
+              <option value="6">d6</option>
+              <option value="8" selected>d8</option>
+              <option value="10">d10</option>
+              <option value="12">d12</option>
+              <option value="20">d20</option>
+              <option value="100">d100</option>
+            </select>
+          </label>
+          <label>Adder
+            <input id="calcAdd" type="number" value="0" aria-label="Adder">
+          </label>
+          <button type="submit">Roll</button>
+        </form>
+        <p class="calc-out" id="calcOut">Set the dice and adder, then roll.</p>
+      </section>
 
       <section class="list-card">
         <header>
@@ -121,6 +147,6 @@
     </section>
   </main>
   <script type="module" src="app.js?v=3d3"></script>
-  <script type="module" src="sheet.js?v=sheet"></script>
+  <script type="module" src="sheet.js?v=sheet2"></script>
 </body>
 </html>
